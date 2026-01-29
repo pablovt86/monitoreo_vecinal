@@ -1,7 +1,6 @@
 const express = require('express')
 const cors = require('cors')
 const app = express()
-const incidentTypesRoutes = require('./routes/incidentTypesRoutes');
 
 app.use(cors())
 app.use(express.json())
@@ -13,8 +12,13 @@ app.get('/', (req, res) => {
 
 
 
-// prefijo de la API
-app.use("/api/incidents", incidentTypesRoutes );
+// prefijos de la API
+
+app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/users", require("./routes/users.routes"));
+app.use("/api/incidents", require("./routes/incidentTypes.routes"));
+app.use("/api/reports", require("./routes/reports.routes"));
+app.use("/api/alerts", require("./routes/alerts.routes"));
 
 const db = require("./config/database/db");
 
