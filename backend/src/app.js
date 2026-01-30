@@ -19,6 +19,8 @@ app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/incidents", require("./routes/incidentTypes.routes"));
 app.use("/api/reports", require("./routes/reports.routes"));
 app.use("/api/alerts", require("./routes/alerts.routes"));
+app.use("/api/roles", require("./routes/roles.routes"));
+
 
 const db = require("./config/database/db");
 

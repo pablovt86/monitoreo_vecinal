@@ -7,6 +7,7 @@ use monitoreo_vecinal;
 -- =========================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    
     firstname VARCHAR(100) NOT NULL,
     lastname VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
@@ -16,7 +17,23 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    
+    
 );
+
+
+ALTER TABLE users
+ADD COLUMN role_id INT,
+ADD CONSTRAINT fk_users_roles
+FOREIGN KEY (role_id) REFERENCES roles(id);
+
+
+UPDATE users SET role_id = 1 WHERE role = 'ciudadano';
+UPDATE users SET role_id = 2 WHERE role = 'operador';
+UPDATE users SET role_id = 3 WHERE role = 'admin';
+
+ALTER TABLE users DROP COLUMN role;
+
 
 -- =========================
 -- TIPOS DE INCIDENTES

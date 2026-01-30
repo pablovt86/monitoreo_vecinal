@@ -1,14 +1,20 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define("User", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    name: DataTypes.STRING,
+    firstname: DataTypes.STRING,
+    allowNull: false,
+    lastname: DataTypes.STRING,
+    allowNull: false,
+
     email: { type: DataTypes.STRING, unique: true },
     password: DataTypes.STRING,
-    role: {
-      type: DataTypes.ENUM("vecino", "admin", "operador"),
-      defaultValue: "vecino"
+      role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 3
     },
     phone: DataTypes.STRING,
+  
     is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
   }, {
     tableName: "users",
