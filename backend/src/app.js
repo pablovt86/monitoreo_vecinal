@@ -20,6 +20,7 @@ app.use("/api/incidents", require("./routes/incidentTypes.routes"));
 app.use("/api/reports", require("./routes/reports.routes"));
 app.use("/api/alerts", require("./routes/alerts.routes"));
 app.use("/api/roles", require("./routes/roles.routes"));
+app.use("/api/metrics", require("./routes/metrics.routes"));
 
 
 const db = require("./config/database/db");
