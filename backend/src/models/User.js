@@ -1,21 +1,27 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define("User", {
-    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
     firstname: DataTypes.STRING,
-    allowNull: false,
     lastname: DataTypes.STRING,
-    allowNull: false,
-
-    email: { type: DataTypes.STRING, unique: true },
+    email: {
+      type: DataTypes.STRING,
+      unique: true
+    },
     password: DataTypes.STRING,
-      role_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 3
+    role_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 3
     },
     phone: DataTypes.STRING,
-  
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
+    }
   }, {
     tableName: "users",
     timestamps: true,

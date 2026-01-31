@@ -1,39 +1,39 @@
-
 DROP DATABASE IF EXISTS monitoreo_vecinal;
-create database monitoreo_vecinal;
-use monitoreo_vecinal;
+CREATE DATABASE monitoreo_vecinal;
+USE monitoreo_vecinal;
+
+-- =========================
+-- ROLES
+-- =========================
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- Roles base del sistema
+INSERT INTO roles (id, name) VALUES
+(1, 'admin'),
+(2, 'moderador'),
+(3, 'usuario');
+
 -- =========================
 -- USUARIOS
 -- =========================
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    
     firstname VARCHAR(100) NOT NULL,
     lastname VARCHAR(100) NOT NULL,
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('vecino', 'admin', 'operador') DEFAULT 'vecino',
+    role_id INT NOT NULL DEFAULT 3,
     phone VARCHAR(30),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    
-    
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_users_roles
+        FOREIGN KEY (role_id) REFERENCES roles(id)
 );
-
-
-ALTER TABLE users
-ADD COLUMN role_id INT,
-ADD CONSTRAINT fk_users_roles
-FOREIGN KEY (role_id) REFERENCES roles(id);
-
-
-UPDATE users SET role_id = 1 WHERE role = 'ciudadano';
-UPDATE users SET role_id = 2 WHERE role = 'operador';
-UPDATE users SET role_id = 3 WHERE role = 'admin';
-
-ALTER TABLE users DROP COLUMN role;
-
 
 -- =========================
 -- TIPOS DE INCIDENTES
@@ -59,7 +59,7 @@ CREATE TABLE locations (
 );
 
 -- =========================
--- REPORTES (TABLA CENTRAL)
+-- REPORTES
 -- =========================
 CREATE TABLE reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -125,4 +125,3 @@ CREATE TABLE report_status_history (
     CONSTRAINT fk_status_history_user
         FOREIGN KEY (changed_by) REFERENCES users(id)
 );
-
