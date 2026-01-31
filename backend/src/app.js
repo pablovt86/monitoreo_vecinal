@@ -15,9 +15,6 @@ app.get('/', (req, res) => {
 // prefijos de la API
 
 app.use("/api/auth", require("./routes/auth.routes"));
-
-
-
 app.use("/api/users", require("./routes/users.routes"));
 app.use("/api/incidents", require("./routes/incidentTypes.routes"));
 app.use("/api/reports", require("./routes/reports.routes"));

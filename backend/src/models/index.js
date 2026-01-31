@@ -28,6 +28,7 @@ const Report = require("./Report")(sequelize, DataTypes);
 const ReportImage = require("./ReportImage")(sequelize, DataTypes);
 const Alert = require("./Alert")(sequelize, DataTypes);
 const ReportStatusHistory = require("./ReportStatusHistory")(sequelize, DataTypes);
+const AuditLog = require("./AuditLog")(sequelize, DataTypes);
 
 /* RELACIONES */
 
@@ -62,6 +63,9 @@ ReportStatusHistory.belongsTo(Report, { foreignKey: "report_id" });
 /* Users ↔ Status History (quién cambió el estado) */
 User.hasMany(ReportStatusHistory, { foreignKey: "changed_by" });
 ReportStatusHistory.belongsTo(User, { foreignKey: "changed_by" });
+
+User.hasMany(AuditLog, { foreignKey: "user_id" });
+AuditLog.belongsTo(User, { foreignKey: "user_id" });
 
 module.exports = {
   sequelize,
