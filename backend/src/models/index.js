@@ -29,6 +29,7 @@ const Alert = require("./Alert")(sequelize, DataTypes);
 const ReportStatusHistory = require("./ReportStatusHistory")(sequelize, DataTypes);
 const AuditLog = require("./AuditLog")(sequelize, DataTypes);
 const OfficialIncident = require("./OfficialIncident")(sequelize, DataTypes);
+const OfficialIncidentStat = require("./OfficialIncidentStat");
 /* RELACIONES */
 
 /* Roles ↔ Users */
@@ -99,5 +100,6 @@ module.exports = {
   Alert,
   ReportStatusHistory,
   AuditLog,
-  OfficialIncident
+  OfficialIncident,
+  OfficialIncidentStat
 };

@@ -1,81 +1,57 @@
-/**
- * JOB: Importación de incidentes oficiales normalizados
- * Fuente: incidents_clean.json
- * Destino: tabla official_incidents
- */
+// Importamos el modelo correcto
+const { OfficialIncidentStat } = require("../models");
 
+// Librerías
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-const { OfficialIncident } = require("../models");
-const { logRejectedIncident } = require("../utils/auditLogger");
-
-// 📌 Ruta del dataset limpio
-const dataPath = path.join(
+// Ruta del archivo normalizado
+const processedPath = path.join(
   __dirname,
   "../../data/processed/incidents_clean.json"
 );
 
-// 📦 Métricas de ejecución
-let inserted = 0;
-let duplicated = 0;
+console.log("📥 Importando estadísticas oficiales...");
 
-// 🔑 Genera un hash único por incidente
-// Esto nos permite detectar duplicados incluso si cambian IDs externos
-function generateHash(incident) {
-  const raw = `${incident.incident_type}|${incident.date}|${incident.latitude}|${incident.longitude}`;
-  return crypto.createHash("sha256").update(raw).digest("hex");
-}
-
-console.log("📥 Iniciando importación de incidentes oficiales...");
-
-// 🧾 Leemos el archivo limpio
-const incidents = JSON.parse(fs.readFileSync(dataPath, "utf8"));
+// Leemos el JSON limpio
+const data = JSON.parse(fs.readFileSync(processedPath, "utf-8"));
 
 (async () => {
-  for (const incident of incidents) {
+  let inserted = 0;
+  let skipped = 0;
 
-    // 🔐 Calculamos el hash
-    const hash = generateHash(incident);
+  for (const item of data) {
+    // Creamos un hash único por año + delito + fuente
+    const hash = crypto
+      .createHash("sha256")
+      .update(`${item.year}-${item.snic_code}-${item.source}`)
+      .digest("hex");
 
-    // 🔍 Buscamos si ya existe en DB
-    const exists = await OfficialIncident.findOne({
-      where: { hash }
-    });
-
+    // Verificamos duplicado
+    const exists = await OfficialIncidentStat.findOne({ where: { hash } });
     if (exists) {
-      duplicated++;
-
-      // 📝 Log de duplicado
-      logRejectedIncident({
-        incident,
-        reason: "DUPLICATED_INCIDENT",
-        stage: "import_incidents"
-      });
-
+      skipped++;
       continue;
     }
 
-    // ✅ Insertamos el incidente
-    await OfficialIncident.create({
-      incident_type: incident.incident_type,
-      description: incident.description,
-      date: incident.date,
-      latitude: incident.latitude,
-      longitude: incident.longitude,
-      source: incident.source,
+    // Insertamos el registro
+    await OfficialIncidentStat.create({
+      year: item.year,
+      snic_code: item.snic_code,
+      snic_name: item.snic_name,
+      cantidad_hechos: item.cantidad_hechos,
+      cantidad_victimas: item.cantidad_victimas,
+      tasa_hechos: item.tasa_hechos,
+      tasa_victimas: item.tasa_victimas,
+      source: item.source,
+      dataset_version: item.dataset_version,
       hash
     });
 
     inserted++;
   }
 
-  console.log("✅ Importación finalizada");
-  console.log("📊 Resumen:");
-  console.log("Total leídos:", incidents.length);
-  console.log("Insertados:", inserted);
-  console.log("Duplicados:", duplicated);
-
-  process.exit();
+  console.log(`✅ Insertados: ${inserted}`);
+  console.log(`⏭️ Duplicados ignorados: ${skipped}`);
 })();

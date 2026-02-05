@@ -125,3 +125,68 @@ CREATE TABLE report_status_history (
     CONSTRAINT fk_status_history_user
         FOREIGN KEY (changed_by) REFERENCES users(id)
 );
+
+CREATE TABLE audit_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  action VARCHAR(100) NOT NULL,
+  entity VARCHAR(100),
+  entity_id INT,
+  description TEXT,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_audit_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE official_incidents (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  incident_type_id INT NOT NULL,
+  location_id INT NOT NULL,
+  occurred_date DATE NOT NULL,
+  source VARCHAR(100) NOT NULL,
+  external_id VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_official_incident_type
+    FOREIGN KEY (incident_type_id) REFERENCES incident_types(id),
+
+  CONSTRAINT fk_official_location
+    FOREIGN KEY (location_id) REFERENCES locations(id)
+);
+CREATE TABLE official_incident_stats (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+
+  -- Año del dato (ej: 2000, 2001)
+  year INT NOT NULL,
+
+  -- Código oficial SNIC del delito
+  snic_code INT NOT NULL,
+
+  -- Nombre oficial del delito
+  snic_name VARCHAR(255) NOT NULL,
+
+  -- Cantidad total de hechos registrados
+  cantidad_hechos INT DEFAULT 0,
+
+  -- Cantidad total de víctimas
+  cantidad_victimas INT DEFAULT 0,
+
+  -- Tasas oficiales
+  tasa_hechos DECIMAL(10,4),
+  tasa_victimas DECIMAL(10,4),
+
+  -- Fuente del dataset
+  source VARCHAR(100),
+
+  -- Versión del dataset (para auditoría)
+  dataset_version VARCHAR(50),
+
+  -- Hash único para evitar duplicados
+  hash CHAR(64) UNIQUE,
+
+  -- Fecha de inserción
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

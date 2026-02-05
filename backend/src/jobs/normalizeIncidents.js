@@ -1,129 +1,95 @@
-/**
- * JOB: Normalización de incidentes oficiales
- * Objetivo:
- * - limpiar datos crudos
- * - validar estructura y formato
- * - generar dataset confiable para análisis
- */
-
-const fs = require("fs");
-const path = require("path");
-const csv = require("csv-parser");
+// Logger de auditoría (rechazos)
 const { logRejectedIncident } = require("../utils/auditLogger");
 
-// 📌 Rutas de entrada y salida
-const rawPath = path.join(__dirname, "../../data/raw/official_incidents.csv");
+// Librerías
+const fs = require("fs");                  // Archivos
+const path = require("path");              // Rutas
+const csv = require("csv-parser");          // CSV → objeto JS
+const crypto = require("crypto");           // Hash para duplicados
+
+// Rutas de entrada y salida
+const rawPath = path.join(
+  __dirname,
+  "../../data/raw/official_incidents.csv"
+);
+
 const processedPath = path.join(
   __dirname,
   "../../data/processed/incidents_clean.json"
 );
 
-// 📦 Contenedores de resultados
-const validIncidents = [];
-const rejectedIncidents = [];
+// Arrays de control
+const validIncidents = [];     // Datos que pasan validación
+const rejectedIncidents = [];  // Datos rechazados
 
-/**
- * Validación completa de un incidente
- * Devuelve:
- * - { valid: true }
- * - { valid: false, reason: "MOTIVO" }
- */
-function isValidIncident(incident) {
-  if (!incident || typeof incident !== "object") {
-    return { valid: false, reason: "INVALID_STRUCTURE" };
-  }
+console.log("🧼 Normalizando dataset oficial...");
 
-  const {
-    incident_id,
-    incident_type,
-    date,
-    latitude,
-    longitude
-  } = incident;
+function isValidIncident(row) {
+  // Validamos campos obligatorios
+  if (!row.nio) return false;
+  if (!row.codigo_delito_snic_id) return false;
+  if (!row.codigo_delito_snic_nombre) return false;
 
-  if (!incident_id) {
-    return { valid: false, reason: "MISSING_INCIDENT_ID" };
-  }
+  // Validamos tipos numéricos
+  if (isNaN(Number(row.nio))) return false;
+  if (isNaN(Number(row.codigo_delito_snic_id))) return false;
 
-  if (!incident_type || typeof incident_type !== "string") {
-    return { valid: false, reason: "INVALID_INCIDENT_TYPE" };
-  }
-
-  if (!date || isNaN(Date.parse(date))) {
-    return { valid: false, reason: "INVALID_DATE" };
-  }
-
-  if (
-    typeof latitude !== "number" ||
-    latitude < -90 ||
-    latitude > 90
-  ) {
-    return { valid: false, reason: "INVALID_LATITUDE" };
-  }
-
-  if (
-    typeof longitude !== "number" ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
-    return { valid: false, reason: "INVALID_LONGITUDE" };
-  }
-
-  return { valid: true };
+  return true;
 }
-
-console.log("🧼 Iniciando normalización de incidentes...");
 
 fs.createReadStream(rawPath)
   .pipe(csv())
   .on("data", (row) => {
 
-    // 🔄 Normalización básica de tipos
-    const incident = {
-      incident_id: row.incident_id || row.id || null,
-      incident_type: row.incident_type
-        ? row.incident_type.trim().toLowerCase()
-        : null,
-      description: row.description || "sin descripción",
-      date: row.date || null,
-      latitude: row.latitude ? parseFloat(row.latitude) : null,
-      longitude: row.longitude ? parseFloat(row.longitude) : null,
-      source: "oficial"
-    };
+    // Validamos estructura y tipos
+    if (!isValidIncident(row)) {
+      rejectedIncidents.push(row);
 
-    // ✅ Validamos la fila
-    const validation = isValidIncident(incident);
-
-    if (validation.valid) {
-      validIncidents.push(incident);
-    } else {
-      rejectedIncidents.push(incident);
-
-      // 📝 Log de rechazo (auditoría)
+      // Log de auditoría
       logRejectedIncident({
-        incident,
-        reason: validation.reason,
-        stage: "normalize_incidents"
+        incident: row,
+        reason: "Estructura inválida o tipos incorrectos",
+        stage: "normalize_official_incidents"
       });
+
+      return; // cortamos esta fila
     }
+
+        // Generamos hash para detectar duplicados futuros
+    const hash = crypto
+      .createHash("sha256")
+      .update(`${row.nio}-${row.codigo_delito_snic_id}`)
+      .digest("hex");
+
+    // Armamos el objeto limpio y consistente
+    validIncidents.push({
+      year: Number(row.nio),
+      snic_code: Number(row.codigo_delito_snic_id),
+      snic_name: row.codigo_delito_snic_nombre.trim(),
+      hechos: Number(row.cantidad_hechos) || 0,
+      victimas: Number(row.cantidad_victimas) || 0,
+      tasa_hechos: row.tasa_hechos
+        ? Number(row.tasa_hechos)
+        : null,
+      source: "SNIC",
+      dataset_version: "static-2024",
+      hash
+    });
   })
-  .on("end", () => {
-    // 💾 Guardamos solo los datos limpios
+
+    .on("end", () => {
+
+    // Guardamos dataset limpio
     fs.writeFileSync(
       processedPath,
       JSON.stringify(validIncidents, null, 2)
     );
 
-    // 📊 Métricas finales
+    // Métricas del ETL
     const total = validIncidents.length + rejectedIncidents.length;
-    const rejectedPct = total
-      ? ((rejectedIncidents.length / total) * 100).toFixed(2)
-      : 0;
+    const rejectedPct = ((rejectedIncidents.length / total) * 100).toFixed(2);
 
-    console.log("✅ Normalización finalizada");
-    console.log("📊 Resumen:");
-    console.log("Total procesados:", total);
-    console.log("Válidos:", validIncidents.length);
-    console.log("Rechazados:", rejectedIncidents.length);
-    console.log("Rechazados %:", rejectedPct + "%");
+    console.log("✅ Normalización completa");
+    console.log(`✔️ Registros válidos: ${validIncidents.length}`);
+    console.log(`❌ Rechazados: ${rejectedIncidents.length} (${rejectedPct}%)`);
   });

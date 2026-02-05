@@ -1,47 +1,22 @@
-// Importamos modelos
-const { OfficialIncident } = require("../models");
+// Librerías nativas
+const fs = require("fs");                 // Manejo de archivos
+const path = require("path");             // Manejo de rutas
 
-// Librerías para CSV
-const fs = require("fs");
-const csv = require("csv-parser");
-const path = require("path");
-
-// Ruta del dataset oficial
-const datasetPath = path.join(
+// Ruta del CSV oficial (origen estático)
+const sourcePath = path.join(
   __dirname,
   "../public/dataset_oficiales/snic-pais.csv"
 );
 
-console.log("📥 Cargando dataset oficial...");
+// Ruta destino RAW (dato crudo, sin tocar)
+const rawPath = path.join(
+  __dirname,
+  "../../data/raw/official_incidents.csv"
+);
 
-fs.createReadStream(datasetPath)
-  .pipe(csv())
-  .on("data", async (row) => {
-    // Validación mínima: año y código de delito
-    if (!row.nio || !row.codigo_delito_snic_id) return;
+console.log("📥 Copiando dataset oficial a zona RAW...");
 
-    // Evitamos duplicados por año + delito
-    const exists = await OfficialIncident.findOne({
-      where: {
-        year: row.nio,
-        snic_code: row.codigo_delito_snic_id
-      }
-    });
+// Copiamos el archivo tal cual viene
+fs.copyFileSync(sourcePath, rawPath);
 
-    if (exists) return;
-
-    // Insertamos solo si no existe
-    await OfficialIncident.create({
-      year: row.nio,
-      snic_code: row.codigo_delito_snic_id,
-      snic_name: row.codigo_delito_snic_nombre,
-      hechos: row.cantidad_hechos || 0,
-      victimas: row.cantidad_victimas || 0,
-      tasa_hechos: row.tasa_hechos || null,
-      source: "SNIC",
-      dataset_version: "2024-01"
-    });
-  })
-  .on("end", () => {
-    console.log("✅ Dataset oficial cargado correctamente");
-  });
+console.log("✅ Dataset copiado correctamente a data/raw");
