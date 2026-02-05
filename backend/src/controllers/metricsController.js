@@ -1,6 +1,8 @@
-const { Report, IncidentType, Location, Sequelize } = require("../models");
+const { Report, IncidentType, Location, sequelize } = require("../models");
 
-const { fn, col } = Sequelize;
+
+
+const { fn, col } = sequelize.Sequelize;
 
 /**
  * KPI 1: Total de reportes
@@ -84,3 +86,26 @@ exports.getReportsByIncidentType = async (req, res) => {
     res.status(500).json({ error: "Error obteniendo reportes por tipo" });
   }
 };
+
+exports.getTopZones = async (req, res) => {
+  try {
+    const data = await Report.findAll({
+      attributes: [
+        [col("Location.neighborhood"), "zone"],
+        [fn("COUNT", col("Report.id")), "total"]
+      ],
+      include: [{
+        model: Location,
+        attributes: []
+      }],
+      group: ["Location.neighborhood"],
+      order: [[fn("COUNT", col("Report.id")), "DESC"]]
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error obteniendo zonas" });
+  }
+};
+

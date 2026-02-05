@@ -18,7 +18,6 @@ db.sequelize = sequelize;
 
 
 
-
 /* MODELOS */
 const Role = require("./Role")(sequelize, DataTypes);
 const User = require("./User")(sequelize, DataTypes);

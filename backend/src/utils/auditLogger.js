@@ -1,26 +1,29 @@
-// src/utils/auditLogger.js
-const { AuditLog } = require("../models");
+const fs = require("fs");
+const path = require("path");
 
-module.exports = async ({
-  user_id = null,
-  action,
-  entity = null,
-  entity_id = null,
-  description = null,
-  req
-}) => {
-  try {
-    await AuditLog.create({
-      user_id,
-      action,
-      entity,
-      entity_id,
-      description,
-      ip_address: req?.ip || null,
-      user_agent: req?.headers?.["user-agent"] || null
-    });
-  } catch (error) {
-    // ⚠️ La auditoría NO debe romper la app
-    console.error("AUDIT LOG ERROR:", error.message);
+const LOG_DIR = path.join(__dirname, "../../logs");
+const REJECTED_LOG = path.join(LOG_DIR, "rejected_incidents.log");
+
+function logRejectedIncident({ incident, reason, stage }) {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
   }
+
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    stage,
+    reason,
+    external_id: incident.external_id || null,
+    source: incident.source || null,
+    incident
+  };
+
+  fs.appendFileSync(
+    REJECTED_LOG,
+    JSON.stringify(logEntry) + "\n"
+  );
+}
+
+module.exports = {
+  logRejectedIncident
 };
