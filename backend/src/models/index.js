@@ -29,7 +29,7 @@ const Alert = require("./Alert")(sequelize, DataTypes);
 const ReportStatusHistory = require("./ReportStatusHistory")(sequelize, DataTypes);
 const AuditLog = require("./AuditLog")(sequelize, DataTypes);
 const OfficialIncident = require("./OfficialIncident")(sequelize, DataTypes);
-const OfficialIncidentStat = require("./OfficialIncidentStat");
+const OfficialIncidentStat = require("./OfficialIncidentStat")(sequelize, DataTypes);
 /* RELACIONES */
 
 /* Roles ↔ Users */

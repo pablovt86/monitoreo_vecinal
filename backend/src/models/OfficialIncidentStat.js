@@ -1,69 +1,23 @@
 module.exports = (sequelize, DataTypes) => {
-
-// Modelo que representa estadísticas oficiales agregadas
-const OfficialIncidentStat = sequelize.define(
-  "OfficialIncidentStat",
-  {
-    // Año del registro
-    year: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+  const OfficialIncidentStat = sequelize.define(
+    "OfficialIncidentStat",
+    {
+      year: { type: DataTypes.INTEGER, allowNull: false },
+      snic_code: { type: DataTypes.INTEGER, allowNull: false },
+      snic_name: { type: DataTypes.STRING, allowNull: false },
+      cantidad_hechos: { type: DataTypes.INTEGER, defaultValue: 0 },
+      cantidad_victimas: { type: DataTypes.INTEGER, defaultValue: 0 },
+      tasa_hechos: { type: DataTypes.DECIMAL(10, 4) },
+      tasa_victimas: { type: DataTypes.DECIMAL(10, 4) },
+      source: { type: DataTypes.STRING },
+      dataset_version: { type: DataTypes.STRING },
+      hash: { type: DataTypes.STRING, unique: true }
     },
-
-    // Código SNIC del delito
-    snic_code: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
-
-    // Nombre del delito
-    snic_name: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-
-    // Cantidad de hechos
-    cantidad_hechos: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-
-    // Cantidad de víctimas
-    cantidad_victimas: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0
-    },
-
-    // Tasa de hechos
-    tasa_hechos: {
-      type: DataTypes.DECIMAL(10, 4)
-    },
-
-    // Tasa de víctimas
-    tasa_victimas: {
-      type: DataTypes.DECIMAL(10, 4)
-    },
-
-    // Fuente del dato
-    source: {
-      type: DataTypes.STRING
-    },
-
-    // Versión del dataset
-    dataset_version: {
-      type: DataTypes.STRING
-    },
-
-    // Hash para evitar duplicados
-    hash: {
-      type: DataTypes.STRING,
-      unique: true
+    {
+      tableName: "official_incident_stats",
+      timestamps: false
     }
-  },
-  {
-    tableName: "official_incident_stats",
-    timestamps: false
-  }
-);
+  );
 
-}
+  return OfficialIncidentStat; // <--- ESTO ES INDISPENSABLE
+};
