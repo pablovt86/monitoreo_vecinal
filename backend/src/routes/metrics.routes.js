@@ -7,7 +7,8 @@ const {
   getReportsByStatus,
   getReportsByNeighborhood,
   getReportsByIncidentType,
-  getTopZones
+  getTopZones,
+  getOfficialVsCitizenComparison 
 } = require("../controllers/metricsController");
 
 /**
@@ -18,5 +19,5 @@ router.get("/by-status", auth, checkRole(["admin"]), getReportsByStatus);
 router.get("/by-neighborhood", auth, checkRole(["admin"]), getReportsByNeighborhood);
 router.get("/by-incident-type", auth, checkRole(["admin"]), getReportsByIncidentType);
 router.get("/top-zones", auth, checkRole(["admin"]), getTopZones);
-
+router.get("/official-vs-citizen",auth,checkRole(["admin", "usuario"]),getOfficialVsCitizenComparison);
 module.exports = router;
