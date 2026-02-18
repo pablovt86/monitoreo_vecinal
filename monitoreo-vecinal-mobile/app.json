@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "monitoreo-vecinal-app",
-    "slug": "monitoreo-vecinal-app",
+    "name": "monitoreo-vecinal-mobile",
+    "slug": "monitoreo-vecinal-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "monitoreovecinalapp",
+    "scheme": "monitoreovecinalmobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

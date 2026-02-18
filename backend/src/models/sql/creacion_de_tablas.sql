@@ -57,7 +57,8 @@ CREATE TABLE locations (
     longitude DECIMAL(11,8),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
+ALTER TABLE locations
+ADD COLUMN neighborhood_id INT NULL;
 -- =========================
 -- REPORTES
 -- =========================
@@ -190,3 +191,81 @@ CREATE TABLE official_incident_stats (
   -- Fecha de inserción
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE neighborhoods (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (name)
+);
+/*
+UPDATE locations l
+JOIN neighborhoods n
+  ON l.neighborhood_ = n.name
+SET l.neighborhood_id = n.id;
+
+
+SELECT * FROM neighborhoods;
+INSERT INTO locations (address, latitude, longitude, neighborhood_id)
+VALUES
+('Calle 7 y 50', -34.9214, -57.9544, 1),
+('Calle 120 y 75', -34.9401, -57.9182, 2),
+('Camino Centenario 2500', -34.8855, -57.9712, 3);
+
+SELECT id, address FROM locations;
+
+SELECT id, neighborhood, neighborhood_id
+FROM locations;
+INSERT INTO reports 
+(user_id, incident_type_id, location_id, description, report_date, status)
+VALUES
+(1, 1, 1, 'Robo en vía pública', NOW(), 'pendiente'),
+(1, 2, 2, 'Intento de hurto', NOW(), 'en_proceso'),
+(1, 1, 1, 'Arrebato', NOW(), 'resuelto'),
+(1, 3, 3, 'Vandalismo', NOW(), 'pendiente');
+
+SELECT id, email FROM users;
+INSERT INTO users (name, email, password, role)
+VALUES ('Usuario Test', 'test@monitoreo.com', '123456', 'citizen');
+select * from roles
+
+SELECT DATABASE();
+show tables
+SELECT * FROM official_incident_stats;
+
+INSERT INTO reports 
+(user_id, incident_type_id, location_id, description, report_date, status)
+VALUES
+(1, 1, 1, 'Robo en vía pública', NOW(), 'pendiente'),
+(1, 2, 2, 'Intento de hurto', NOW(), 'en_proceso'),
+(1, 1, 1, 'Arrebato', NOW(), 'resuelto'),
+(1, 3, 3, 'Vandalismo', NOW(), 'pendiente');
+
+
+select * from reports
+
+select * from neighborhoods
+
+SELECT 
+    o.incident_type,
+    i.id
+FROM official_incident_stats o
+JOIN incident_types i 
+ON o.incident_type = i.name
+LIMIT 10;
+SELECT DISTINCT neighborhood FROM official_incident_stats;
+
+INSERT INTO incident_types (name)
+SELECT DISTINCT snic_name
+FROM official_incident_stats;
+
+select * from official_incident_stats;
+
+SELECT id, name FROM incident_types LIMIT 10;
+
+INSERT INTO reports 
+(user_id, incident_type_id, location_id, description, report_date, status)
+VALUES
+(3, 1, 1, 'Robo en vía pública', NOW(), 'pendiente'),
+(3, 2, 2, 'Intento de hurto', NOW(), 'en_proceso'),
+(3, 1, 1, 'Arrebato', NOW(), 'resuelto'),
+(3, 3, 3, 'Vandalismo', NOW(), 'pendiente');  /*

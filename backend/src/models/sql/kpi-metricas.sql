@@ -29,3 +29,7 @@ SELECT DATE(report_date) as fecha, COUNT(*)
 FROM reports
 GROUP BY DATE(report_date)
 ORDER BY fecha;
+
+
+SELECT COUNT(*) FROM official_incidents;
+SELECT * FROM official_incidents LIMIT 10;
