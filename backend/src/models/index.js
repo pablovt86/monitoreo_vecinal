@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const config = require("../config/database/db");
+// const Neighborhood = require("./Neighborhood");
 
 const sequelize = new Sequelize(
   config.database,
@@ -30,6 +31,8 @@ const ReportStatusHistory = require("./ReportStatusHistory")(sequelize, DataType
 const AuditLog = require("./AuditLog")(sequelize, DataTypes);
 const OfficialIncident = require("./OfficialIncident")(sequelize, DataTypes);
 const OfficialIncidentStat = require("./OfficialIncidentStat")(sequelize, DataTypes);
+const Municipality = require("./municipality")(sequelize, DataTypes);
+const Neighborhood = require("./Neighborhood")(sequelize, DataTypes);
 /* RELACIONES */
 
 /* Roles ↔ Users */
@@ -86,6 +89,13 @@ Location.hasMany(OfficialIncident, {
 OfficialIncident.belongsTo(Location, {
   foreignKey: "location_id"
 });
+/* Municipality ↔ Neighborhood */
+Municipality.hasMany(Neighborhood, { foreignKey: "municipality_id" });
+Neighborhood.belongsTo(Municipality, { foreignKey: "municipality_id" });
+
+/* Neighborhood ↔ Location */
+Neighborhood.hasMany(Location, { foreignKey: "neighborhood_id" });
+Location.belongsTo(Neighborhood, { foreignKey: "neighborhood_id" });
 
 
 
@@ -101,5 +111,7 @@ module.exports = {
   ReportStatusHistory,
   AuditLog,
   OfficialIncident,
-  OfficialIncidentStat
+  OfficialIncidentStat,
+  Municipality,
+  Neighborhood
 };

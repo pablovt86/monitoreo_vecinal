@@ -1,8 +1,10 @@
-export const colors = {
-  primary: "#2563EB",
-  secondary: "#1E293B",
-  background: "#F8FAFC",
-  white: "#FFFFFF",
-  gray: "#94A3B8",
-  danger: "#DC2626",
-};
+export const colors  = {
+  background: "#0D1117",
+  card: "#161B22",
+  accent: "#FF3B3B",
+  gold: "#FFD700",
+  silver: "#C0C0C0",
+  bronze: "#CD7F32",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#8B949E"
+}

@@ -1,8 +1,12 @@
+
 const {
   Report,
   User,
   IncidentType,
-  Location
+  Location,
+  sequelize,
+  Neighborhood,
+  Municipality
 } = require("../models");
 
 exports.createReport = async (req, res) => {
@@ -81,3 +85,43 @@ exports.updateReportStatus = async (req, res) => {
     res.status(400).json({ error: "Error al actualizar estado" });
   }
 };
+exports.getRankingByMunicipality = async (req, res) => {
+  try {
+    const ranking = await Report.findAll({
+      attributes: [
+        [sequelize.fn("COUNT", sequelize.col("Report.id")), "totalReports"]
+      ],
+      include: [
+        {
+          model: Location,
+          attributes: [],
+          include: [
+            {
+              model: Neighborhood,
+              attributes: [],
+              include: [
+                {
+                  model: Municipality,
+                  attributes: ["id", "name"]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      group: [
+        "Location.Neighborhood.Municipality.id",
+        "Location.Neighborhood.Municipality.name"
+      ]
+    });
+
+    res.json(ranking);
+
+  } catch (error) {
+  console.error("🔥 ERROR REAL RANKING:", error);
+  res.status(500).json({ 
+    error: error.message,
+    stack: error.stack 
+  });
+}
+  }
