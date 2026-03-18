@@ -1,4 +1,5 @@
-const { sequelize, Municipality, Neighborhood, Location, Report } = require("./models");
+require("dotenv").config({ path: "../.env" });
+const { sequelize, Municipality, Neighborhood, Location, Report } = require("../models");
 
 async function seed() {
   try {
