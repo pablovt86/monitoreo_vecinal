@@ -31,8 +31,11 @@ const ReportStatusHistory = require("./ReportStatusHistory")(sequelize, DataType
 const AuditLog = require("./AuditLog")(sequelize, DataTypes);
 const OfficialIncident = require("./OfficialIncident")(sequelize, DataTypes);
 const OfficialIncidentStat = require("./OfficialIncidentStat")(sequelize, DataTypes);
-const Municipality = require("./municipality")(sequelize, DataTypes);
+const Municipality = require("./Municipality")(sequelize, DataTypes);
 const Neighborhood = require("./Neighborhood")(sequelize, DataTypes);
+const ReportValidation = require("./ReportValidation")(sequelize, DataTypes);
+const Comment = require("./Comment")(sequelize, DataTypes);
+
 /* RELACIONES */
 
 /* Roles ↔ Users */
@@ -96,6 +99,32 @@ Neighborhood.belongsTo(Municipality, { foreignKey: "municipality_id" });
 /* Neighborhood ↔ Location */
 Neighborhood.hasMany(Location, { foreignKey: "neighborhood_id" });
 Location.belongsTo(Neighborhood, { foreignKey: "neighborhood_id" });
+/* Reports ↔ Report Validations (Votos) */
+Report.hasMany(ReportValidation, { foreignKey: "report_id" });
+ReportValidation.belongsTo(Report, { foreignKey: "report_id" });
+/* Users ↔ Report Validations (quién votó) */
+User.hasMany(ReportValidation, { foreignKey: "user_id" });
+ReportValidation.belongsTo(User, { foreignKey: "user_id" });
+
+
+
+
+
+
+//relaciones
+Comment.belongsTo(User, { foreignKey: "user_id" });
+Comment.belongsTo(Report, { foreignKey: "report_id" });
+
+// 🔥 hilo de comentarios
+Comment.hasMany(Comment, {
+  as: "replies",
+  foreignKey: "parent_id"
+});
+
+Comment.belongsTo(Comment, {
+  as: "parent",
+  foreignKey: "parent_id"
+});
 
 
 
@@ -113,5 +142,8 @@ module.exports = {
   OfficialIncident,
   OfficialIncidentStat,
   Municipality,
-  Neighborhood
+  Neighborhood,
+  ReportValidation,
+  Comment
+
 };

@@ -4,6 +4,7 @@ const app = express()
 
 app.use(cors())
 app.use(express.json())
+app.use("/uploads", express.static("uploads"));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Monitoreo Vecinal API funcionando' })
@@ -22,7 +23,8 @@ app.use("/api/reports", require("./routes/reports.routes"));
 app.use("/api/alerts", require("./routes/alerts.routes"));
 app.use("/api/roles", require("./routes/roles.routes"));
 app.use("/api/metrics", require("./routes/metrics.routes"))
-app.use("/api/zones", require("./routes/zoneRoutes"));
+app.use("/api/zones", require("./routes/zone.routes"));
+app.use("/api/comments", require("./routes/comment.routes"));
 
 
 const db = require("./config/database/db");

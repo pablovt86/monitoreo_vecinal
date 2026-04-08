@@ -39,9 +39,25 @@ exports.register = async (req, res) => {
 
     console.log("USER CREADO:", newUser.id);
 
-    res.status(201).json({
-      message: "Usuario registrado correctamente"
-    });
+    
+
+// 🔐 generar token igual que login
+const token = jwt.sign(
+  { id: newUser.id, email: newUser.email },
+  process.env.JWT_SECRET,
+  { expiresIn: "1d" }
+);
+
+// 🧼 nunca devolver password
+newUser.password = undefined;
+
+res.status(201).json({
+  message: "Usuario registrado correctamente",
+  token,
+  user: newUser
+});
+
+
 
   } catch (error) {
     console.error("🔥 REGISTER ERROR REAL:", error);
