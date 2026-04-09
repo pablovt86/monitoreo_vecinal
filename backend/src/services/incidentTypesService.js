@@ -1,4 +1,3 @@
-const db = require('../config/database/db');
 
 async function getAllIncidentTypes() {
   const [rows] = await db.query(

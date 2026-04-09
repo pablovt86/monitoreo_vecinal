@@ -27,7 +27,6 @@ app.use("/api/zones", require("./routes/zone.routes"));
 app.use("/api/comments", require("./routes/comment.routes"));
 
 
-const db = require("./config/database/db");
 
 
 

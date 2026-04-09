@@ -1,4 +1,3 @@
-const {Report} = require("../models");
 
 
 module.exports = (sequelize, DataTypes) => {

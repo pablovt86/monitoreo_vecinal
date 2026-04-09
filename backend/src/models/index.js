@@ -1,19 +1,36 @@
+require("dotenv").config();
 const { Sequelize, DataTypes } = require("sequelize");
-const config = require("../config/database/db");
 // const Neighborhood = require("./Neighborhood");
 
-const sequelize = new Sequelize(
-  config.database,
-  config.username,
-  config.password,
-  {
-    ...config,
-    dialect: "mysql" 
-  }
-);
+// const sequelize = new Sequelize(
+//   config.database,
+//   config.username,
+//   config.password,
+//   {
+//     ...config,
+//     dialect: "mysql" 
+//   }
+// );
+
+// const db = {};
+
+// db.Sequelize = Sequelize;
+// db.sequelize = sequelize;
+
+
+const sequelize = new Sequelize(process.env.DB_URI, {
+  dialect: "postgres",
+  protocol: "postgres",
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false,
+    },
+  },
+});
 
 const db = {};
-
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 

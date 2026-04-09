@@ -59,14 +59,15 @@ res.status(201).json({
 
 
 
-  } catch (error) {
-    console.error("🔥 REGISTER ERROR REAL:", error);
-    res.status(500).json({
-      error: error.message
-    });
-  }
-};
+  }catch (error) {
+  console.error("💣 ERROR COMPLETO:", error);
+  console.error("💣 STACK:", error.stack);
 
+  res.status(500).json({
+    error: error.message || "Error interno"
+  });
+}
+};
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
