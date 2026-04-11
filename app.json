@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "3d24e648-6453-4c3c-b00f-5b27cb0cba33"
+      }
+    },
+    "android": {
+      "package": "com.pablovt86.monitoreo_vecinal"
+    }
+  }
+}

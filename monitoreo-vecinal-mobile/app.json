@@ -16,7 +16,9 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
-        "permissions": ["ACCESS_FINE_LOCATION"],
+        "permissions": [
+          "ACCESS_FINE_LOCATION"
+        ],
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
@@ -45,6 +47,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8dc15c2f-ea63-4a47-8566-4a552c08feae"
+      }
     }
   }
 }

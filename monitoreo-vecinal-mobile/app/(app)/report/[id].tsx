@@ -148,7 +148,7 @@ export default function ReportDetail() {
         </Text>
 
         {/* 🖼️ IMAGEN */}
-       {report.image ? (
+        {report.image ? (
   <TouchableOpacity onPress={() => setImageVisible(true)}>
     <Image
       source={{ uri: report.image }}
@@ -162,12 +162,6 @@ export default function ReportDetail() {
   </Text>
 )}
 
-        {!report.image && (
-          <Text style={styles.noImage}>
-            Sin imagen disponible
-          </Text>
-        )}
-
         {/* TIEMPO */}
         <Text style={styles.time}>
           {formatTime(report.report_date)}
@@ -175,7 +169,7 @@ export default function ReportDetail() {
 
         {/* UBICACIÓN */}
         <Text style={styles.location}>
-          📍 {report.Location?.Neighborhood?.Municipality?.name || "Sin ubicación"}
+          📍 {report.Location?.address || "Sin dirección"}
         </Text>
 
         {/* 👥 USUARIO */}
@@ -280,8 +274,7 @@ export default function ReportDetail() {
 
       </View>
 
-      {/* MODAL IMAGEN */}
-      <Modal visible={imageVisible} transparent={true}>
+<Modal visible={imageVisible} transparent={true}>
   <TouchableOpacity
     style={styles.modalContainer}
     onPress={() => setImageVisible(false)}
@@ -293,6 +286,7 @@ export default function ReportDetail() {
     />
   </TouchableOpacity>
 </Modal>
+
 
 
      
@@ -444,6 +438,6 @@ const styles = StyleSheet.create({
 fullImage: {
   width: "100%",
   height: "80%"
-}  
+},
 
 });

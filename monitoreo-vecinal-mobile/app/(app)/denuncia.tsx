@@ -15,7 +15,7 @@ import { api } from "../../services/api";
 import { useZone } from "./context/ZoneContext";
 import { useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import * as Location from "expo-location";
 // =============================
 // 🔥 TIPOS
 // =============================
@@ -96,13 +96,19 @@ export default function Denuncia() {
 
       // 🟢 SIN imagen → usar axios normal
       if (!image) {
-        await api.post("/reports", {
-          description,
-          incident_type_id: selectedType.id,
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          municipality: zone?.municipality
-        });
+       const address = await getAddressFromCoords(
+  coords.latitude,
+  coords.longitude
+);
+
+await api.post("/reports", {
+  description,
+  incident_type_id: selectedType.id,
+  latitude: coords.latitude,
+  longitude: coords.longitude,
+  address, // 🔥 NUEVO
+  municipality: zone?.municipality
+});
 
         Alert.alert("Reporte enviado correctamente");
         return;
@@ -110,13 +116,18 @@ export default function Denuncia() {
 
       // 🔥 CON imagen → usar fetch
       const token = await AsyncStorage.getItem("token");
-
+      const address = await getAddressFromCoords(
+      coords.latitude,
+      coords.longitude);
       const formData = new FormData();
-
+      
       formData.append("description", description);
       formData.append("incident_type_id", String(selectedType.id));
       formData.append("latitude", String(coords.latitude));
       formData.append("longitude", String(coords.longitude));
+      
+      formData.append("address", address);
+      
 
       formData.append("image", {
         uri: image.uri,
@@ -124,7 +135,7 @@ export default function Denuncia() {
         type: "image/jpeg",
       } as any);
 
-      const response = await fetch("http://192.168.1.44:3000/api/reports", {
+      const response = await fetch("https://monitoreo-vecinal-backend.onrender.com/api/reports", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -153,6 +164,27 @@ export default function Denuncia() {
       Alert.alert("Error al enviar reporte");
     }
   };
+
+const getAddressFromCoords = async (lat: number, lng: number) => {
+  try {
+    const result = await Location.reverseGeocodeAsync({
+      latitude: lat,
+      longitude: lng,
+    });
+
+    if (result.length > 0) {
+      const addr = result[0];
+
+      return `${addr.street || ""} ${addr.name || ""}, ${addr.city || ""}`;
+    }
+
+    return "Dirección desconocida";
+  } catch (error) {
+    console.log("Error obteniendo dirección:", error);
+    return "Dirección desconocida";
+  }
+};
+
 
   // =============================
   // 🎨 UI

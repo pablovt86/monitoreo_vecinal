@@ -14,10 +14,15 @@ import {
 import MapView, { Heatmap } from "react-native-maps";
 
 import * as Location from "expo-location";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "expo-router";
 
 import { api } from "../../services/api";
+import { useZone } from "./context/ZoneContext"; // ✅ RUTA CORRECTA
+
 
 import { colors } from "../../theme/colors";
 
@@ -35,6 +40,7 @@ type ReportItem = {
   id: number
   description: string
   Location?: {
+  address?: string // 🔥 AGREGAR ESTO
     Neighborhood?: {
       Municipality?: {
         name?: string
@@ -56,14 +62,16 @@ type HeatmapPoint = {
 
 export default function Home() {
 
+
   // =============================
   // ESTADOS
   // =============================
-
+  const router = useRouter();
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [lastReports, setLastReports] = useState<ReportItem[]>([]);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const [isPersonalized, setIsPersonalized] = useState(false);
+  const { setZone } = useZone();
 
   const [region, setRegion] = useState({
     latitude: -34.6037,
@@ -74,19 +82,22 @@ export default function Home() {
 
   const scrollRef = useRef<ScrollView>(null);
   const scrollPosition = useRef(0);
-
+  
 
   // =============================
   // CARGA INICIAL
   // =============================
 
-  useEffect(() => {
+ useFocusEffect(
+  useCallback(() => {
+    console.log("REFRESH HOME 🔥");
 
     fetchGeneralRanking();
     fetchLastReports();
     fetchHeatmap();
 
-  }, []);
+  }, [])
+);
 
 
   // =============================
@@ -126,7 +137,6 @@ export default function Home() {
 
       const response = await api.get("/reports/ranking/municipality");
 
-      console.log("Ranking backend:", response.data);
 
       // 🔥 ahora usamos directamente el formato del backend
       const formatted: RankingItem[] = response.data.map((item: any) => ({
@@ -134,6 +144,7 @@ export default function Home() {
         municipio: item.municipio || "Sin municipio",
 
         total: item.total || 0
+        
 
       }));
 
@@ -158,7 +169,8 @@ export default function Home() {
 
     const response = await api.get("/reports/last");
 
-    console.log("Últimos reportes:", response.data);
+    
+    console.log("Últimos reportes: del fetchLastReports", response.data);
 
     // 🔥 verificamos que realmente sea un array
     if (Array.isArray(response.data)) {
@@ -175,7 +187,7 @@ export default function Home() {
 
   } catch (error) {
 
-    console.log("Error trayendo últimos reportes", error);
+    console.log("Error trayendo últimos reportes del fetchLastReports", error);
 
   }
 
@@ -194,15 +206,22 @@ export default function Home() {
       console.log("Heatmap:", response.data);
 
       // 🔥 convertimos a Number para evitar error de AirMapHeatmap
-    const validPoints: HeatmapPoint[] = response.data
-    .map((p:any) => ({
+   const validPoints: HeatmapPoint[] = response.data
+  .map((p: any) => ({
     latitude: Number(p.latitude),
     longitude: Number(p.longitude),
-    weight: Number(p.weight)})).filter(p => !isNaN(p.latitude) && !isNaN(p.longitude));
-
+    weight: Number(p.weight)
+  }))
+  .filter((p: HeatmapPoint) =>
+    !isNaN(p.latitude) &&
+    !isNaN(p.longitude) &&
+    !isNaN(p.weight)
+  );
+     console.log("Puntos válidos para heatmap:", validPoints);
       setHeatmapPoints(validPoints);
 
     } catch (error) {
+      
 
       console.log("Error cargando heatmap", error);
 
@@ -217,11 +236,18 @@ const fetchMyZoneData = async (lat: number, lng: number) => {
 
   try {
 
-    const response = await api.get(`/api/zones/my-zone?lat=${lat}&lng=${lng}`);
+    const response = await api.get(`/zones/my-zone?lat=${lat}&lng=${lng}`);
     
 
-
-    console.log("MI ZONA:", response.data);
+// ACÁ VA
+    if (response.data?.zone) {
+        setZone({
+          ...response.data.zone, // lo que viene del backend
+          latitude: lat,         // 🔥 agregamos coordenadas reales
+          longitude: lng         // 🔥 agregamos coordenadas reales
+        });
+    }    
+    console.log("MI ZONA:", response.data) ;
 
     // 🔥 reemplazamos datos con la zona
 
@@ -231,16 +257,39 @@ const fetchMyZoneData = async (lat: number, lng: number) => {
         total: response.data.reports.length
       }
     ]);
-
     setLastReports(response.data.reports);
 
-    const points = response.data.reports.map((r:any) => ({
-      latitude: Number(r.Location?.latitude),
-      longitude: Number(r.Location?.longitude),
-      weight: 1
-    }));
+    const points = response.data.reports
+
+
+
+    
+  .map((r: any) => ({
+    latitude: Number(r.Location?.latitude),
+    longitude: Number(r.Location?.longitude),
+    weight: 1,
+  }))
+  .filter(
+    (p: any) =>
+      !isNaN(p.latitude) &&
+      !isNaN(p.longitude) &&
+      p.latitude !== 0 &&
+      p.longitude !== 0
+  );
+
+console.log("POINTS MI ZONA:", points);
+
 
     setHeatmapPoints(points);
+
+ if (points.length > 0) {
+  setRegion({
+    latitude: points[0].latitude,
+    longitude: points[0].longitude,
+    latitudeDelta: 0.1,
+    longitudeDelta: 0.1,
+  });
+ }    
 
   } catch (error) {
 
@@ -254,33 +303,112 @@ const fetchMyZoneData = async (lat: number, lng: number) => {
   // PERSONALIZAR MAPA
   // =============================
 
- const handlePersonalize = async () => {
+//  const handlePersonalize = async () => {
 
+//   let { status } = await Location.requestForegroundPermissionsAsync();
+
+//   if (status !== "granted") {
+//     alert("Permiso denegado");
+//     return;
+//   }
+
+//   let loc = await Location.getCurrentPositionAsync({});
+
+//   const lat = loc.coords.latitude;
+//   const lng = loc.coords.longitude;
+
+//   // ✔ lo que ya tenías
+//   setRegion({
+//     latitude: lat,
+//     longitude: lng,
+//     latitudeDelta: 0.05,
+//     longitudeDelta: 0.05,
+//   });
+
+//   setIsPersonalized(true);
+
+//   await fetchMyZoneData(lat, lng);
+
+// };
+
+
+
+// ✅ NUEVO: función reutilizable para obtener ubicación
+const getUserLocation = async () => {
+
+  // 👉 pide permisos (esto dispara el popup si no lo aceptó)
   let { status } = await Location.requestForegroundPermissionsAsync();
 
   if (status !== "granted") {
     alert("Permiso denegado");
-    return;
+    return null; // 🔴 IMPORTANTE: devolvemos null para validar después
   }
 
+  // 👉 obtiene ubicación actual
   let loc = await Location.getCurrentPositionAsync({});
 
-  const lat = loc.coords.latitude;
-  const lng = loc.coords.longitude;
+  // 👉 retornamos solo lo necesario (más limpio)
+  return {
+    latitude: loc.coords.latitude,
+    longitude: loc.coords.longitude,
+  };
+};
 
-  // ✔ lo que ya tenías
+
+const handlePersonalize = async () => {
+
+  // ✅ NUEVO: usamos la función reutilizable
+  const location = await getUserLocation();
+
+  // 🔴 VALIDACIÓN (ANTES no existía así)
+  if (!location) return;
+
+  const { latitude, longitude } = location;
+
+  // ✔ lo que ya tenías (sin cambios)
   setRegion({
-    latitude: lat,
-    longitude: lng,
+    latitude,
+    longitude,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   });
 
   setIsPersonalized(true);
 
-  // 🔥 NUEVO (esto es lo único que agregamos)
-  await fetchMyZoneData(lat, lng);
+  await fetchMyZoneData(latitude, longitude);
+};
 
+
+
+// ✅ NUEVO: handler para botón "Crear reporte"
+const handleCreateReport = async () => {
+
+  // 👉 reutilizamos la lógica
+  const location = await getUserLocation();
+
+  // 🔴 VALIDACIÓN antes de navegar (CLAVE)
+  if (!location) {
+    alert("Necesitamos tu ubicación para crear un reporte");
+    return;
+  }
+
+  // 👉 opcional: podés guardar para usar después
+  setRegion({
+    latitude: location.latitude,
+    longitude: location.longitude,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  });
+
+  // ✅ CAMBIO IMPORTANTE:
+  // ahora navegamos SOLO si tenemos ubicación
+  router.push({
+    pathname: "./denuncia",
+    params: {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    },
+  });
 };
 
 
@@ -288,134 +416,170 @@ const fetchMyZoneData = async (lat: number, lng: number) => {
   // RENDER
   // =============================
 
-  return (
+  
+ return (
+  <SafeAreaView style={styles.container}>
+    <ScrollView showsVerticalScrollIndicator={false}>
 
-    <SafeAreaView style={styles.container}>
+      <Text style={styles.title}>
+        Monitoreo Vecinal
+      </Text>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-
-        <Text style={styles.title}>
-          Monitoreo Vecinal
-        </Text>
-
-
-        {/* MAPA */}
-
-        <View style={styles.mapContainer}>
-
-          <MapView style={styles.map} region={region}>
-
+      {/* MAPA */}
+      <View style={styles.mapContainer}>
+        <MapView style={styles.map} region={region}>
+         {heatmapPoints.length > 0 && (
             <Heatmap
               points={heatmapPoints}
               radius={50}
               opacity={0.7}
-            />
+                          />
+                              )}
+        </MapView>
+      </View>
 
-          </MapView>
+      {/* RANKING */}
 
-        </View>
-
-
-        {/* RANKING */}
-
-        <Text style={styles.sectionTitle}>
-
-          {isPersonalized
-            ? "🔥 Reportes en tu zona"
-            : "🔥 Municipios más reportados"}
-
-        </Text>
-
-
-        {ranking.slice(0, 3).map((item, index) => (
-
-          <View key={index} style={styles.card}>
-
-            <Text style={styles.rankPosition}>
-              #{index + 1}
-            </Text>
-
-            <View>
-
-              <Text style={styles.municipio}>
-                {item.municipio}
-              </Text>
-
-              <Text style={styles.total}>
-                {item.total} reportes
-              </Text>
-
-            </View>
-
-          </View>
-
-        ))}
-
-
-        {/* CARRUSEL */}
-
-        <Text style={styles.sectionTitle}>
-          🚨 Alertas de vecinos en las últimas horas
-        </Text>
-       
-
-        <ScrollView
-          horizontal
-          ref={scrollRef}
-          showsHorizontalScrollIndicator={false}
-          style={{ paddingLeft: 16 }}
-        >
-
-         {lastReports.length === 0 ? (
-
-  <Text style={{marginLeft:16}}>
-    No hay alertas recientes
-  </Text>
-
-) : (
-
-  lastReports.map((report, index) => (
-
-    <View key={index} style={styles.carouselCard}>
-
-      <Text style={styles.reportTitle}>
-        {report.description}
-      </Text>
-
-      <Text style={styles.reportMunicipio}>
-        📍 {report.Location?.Neighborhood?.Municipality?.name || "Sin municipio"}
-      </Text>
-
-    </View>
-
-  ))
-
-)}
-        </ScrollView>
-
-
-        {/* BOTÓN UBICACIÓN */}
-
+      {isPersonalized && (
         <TouchableOpacity
-          style={styles.button}
-          onPress={handlePersonalize}
+          style={{
+            backgroundColor: "#4e2828",
+            marginHorizontal: 16,
+            marginTop: 10,
+            padding: 10,
+            borderRadius: 10,
+            alignItems: "center"
+          }}
+          onPress={() => {
+            setIsPersonalized(false);
+            fetchGeneralRanking();
+            fetchLastReports();
+            fetchHeatmap();
+          }}
         >
+          <Text style={{ color: "#f8f2f2" }}>
+            Volver a vista general
+          </Text>
+        </TouchableOpacity>
+      )}
 
-          <Text style={styles.buttonText}>
-            Ver mi zona
+      <Text style={styles.sectionTitle}>
+        {isPersonalized
+          ? "🔥 Reportes en tu zona"
+          : "🔥 Municipios más reportados"}
+      </Text>
+
+      {ranking.slice(0, 3).map((item, index) => (
+        <View key={index} style={styles.card}>
+          <Text style={styles.rankPosition}>
+            #{index + 1}
           </Text>
 
-        </TouchableOpacity>
+          <View>
+            <Text style={styles.municipio}>
+              {item.municipio}
+            </Text>
+
+            <Text style={styles.total}>
+              {item.total} reportes
+            </Text>
+          </View>
+        </View>
+      ))}
+
+      {/* CARRUSEL */}
+
+      <Text style={styles.sectionTitle}>
+        {isPersonalized
+          ? "🚨 Alertas en tu zona (últimas 12h)"
+          : "🚨 Alertas de vecinos en las últimas horas"}
+      </Text>
+
+      <ScrollView
+        horizontal
+        ref={scrollRef}
+        showsHorizontalScrollIndicator={false}
+        style={{ paddingLeft: 16 }}
+      >
+
+        {lastReports.length === 0 ? (
+
+          <Text style={{ marginLeft: 16 }}>
+            No hay alertas recientes
+          </Text>
+
+        ) : (
+
+          lastReports.map((report, index) => (
+            
+
+            <TouchableOpacity
+              key={index}
+              style={styles.carouselCard}
+              onPress={() => router.push(`/report/${report.id}`)}
+            >
+                <Text style={styles.reportTitle}>
+                {report.description}
+              </Text>
+
+              <Text style={styles.reportMunicipio}>
+                📍 {report.Location?.address || "Sin ubicación"}
+              </Text>
+
+            </TouchableOpacity>
+
+          ))
+
+        )}
 
       </ScrollView>
 
-    </SafeAreaView>
+      {/* BOTÓN UBICACIÓN */}
 
-  );
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handlePersonalize}
+      >
+        <Text style={styles.buttonText}>
+          Ver mi zona
+        </Text>
+      </TouchableOpacity>
+
+
+   <TouchableOpacity
+  style={styles.button}
+  onPress={handleCreateReport} // ✅ CAMBIO: usamos handler con validación
+>
+  <Text style={styles.buttonText}>
+    🚨 Crear reporte
+  </Text>
+</TouchableOpacity>
+
+      {/* BOTÓN TEST */}
+
+      {__DEV__ && (
+        <TouchableOpacity
+          style={{
+            marginHorizontal: 20,
+            marginBottom: 10,
+            padding: 10,
+            backgroundColor: "#333",
+            borderRadius: 10,
+            alignItems: "center"
+          }}
+          onPress={() => router.push("/test-validation")}
+        >
+          <Text style={{ color: "#fff" }}>
+            ⚙️ Modo Test
+          </Text>
+        </TouchableOpacity>
+      )}
+
+    </ScrollView>
+  </SafeAreaView>
+);
 
 }
-
-
 // =============================
 // ESTILOS
 // =============================

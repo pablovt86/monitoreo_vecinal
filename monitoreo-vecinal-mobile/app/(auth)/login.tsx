@@ -1,92 +1,206 @@
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView
+} from "react-native";
+
 import { useState } from "react";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import { api } from "../../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import Button from "../../components/Button";
-import { colors } from "../../theme/colors";
-
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Login() {
 
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");    
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-const handleLogin = async () => {
-  try {
-    const response = await api.post("/auth/login", {
-      email,
-      password,
-    });
+  const router = useRouter();
 
-    const { token } = response.data;
+  const handleLogin = async () => {
 
-    console.log("TOKEN:", token);
+    if (!email || !password) {
+      return Alert.alert("Error", "Completá todos los campos");
+    }
 
-    // Más adelante guardaremos el token
-    router.replace("/(app)/home");
+    try {
+      const response = await api.post("/auth/login", {
+        email,
+        password
+      });
 
-  } catch (error: any) {
-    console.log("ERROR LOGIN:", error.response?.data || error.message);
-  }
-};
+      const token = response.data.token;
 
+      await AsyncStorage.setItem("token", token);
 
+      Alert.alert("Éxito", "Bienvenido 👋");
 
+      router.replace("/(app)/home");
 
-
+    } catch (error: any) {
+      Alert.alert(
+        "Error",
+        error?.response?.data?.error || "Credenciales inválidas"
+      );
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Monitoreo Vecinal</Text>
-      <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+    <ScrollView contentContainerStyle={styles.container}>
 
-      <TextInput
-        placeholder="Correo electrónico"
-        placeholderTextColor={colors.gray}
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-      />
+      {/* 🔥 LOGO */}
+      <View style={styles.logoContainer}>
+        <Ionicons name="shield-checkmark" size={60} color="#8B5CF6" />
+      </View>
 
-      <TextInput
-        placeholder="Contraseña"
-        placeholderTextColor={colors.gray}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-      />
+      <Text style={styles.title}>Bienvenido</Text>
+      <Text style={styles.subtitle}>Iniciá sesión para continuar</Text>
 
-        <Button title="Iniciar sesión" onPress={handleLogin} />
-    </View>
+      {/* Email */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={18} color="#aaa" />
+        <TextInput
+          placeholder="Correo electrónico"
+          placeholderTextColor="#888"
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+      </View>
+
+      {/* Password */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={18} color="#aaa" />
+        <TextInput
+          placeholder="Contraseña"
+          placeholderTextColor="#888"
+          secureTextEntry={!showPassword}
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={18}
+            color="#aaa"
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* Botón */}
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Iniciar sesión</Text>
+      </TouchableOpacity>
+
+      {/* Link */}
+      <Text style={styles.link} onPress={() => router.push("/register")}>
+        ¿No tenés cuenta? Registrate
+      </Text>
+
+      {/* 🔐 Seguridad */}
+      <View style={styles.securityBox}>
+        <Ionicons name="shield-outline" size={20} color="#8B5CF6" />
+        <View style={{ marginLeft: 10 }}>
+          <Text style={styles.securityTitle}>
+            Tu seguridad es nuestra prioridad
+          </Text>
+          <Text style={styles.securityText}>
+            Tus datos están protegidos.
+          </Text>
+        </View>
+      </View>
+
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 24,
-    justifyContent: "center",
+    flexGrow: 1,
+    backgroundColor: "#0D0D0D",
+    padding: 20,
+    justifyContent: "center"
   },
+
+  logoContainer: {
+    alignItems: "center",
+    marginBottom: 10
+  },
+
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: colors.text,
-    marginBottom: 8,
+    color: "#fff",
+    fontSize: 26,
+    textAlign: "center",
+    fontWeight: "bold"
   },
+
   subtitle: {
-    fontSize: 14,
-    color: colors.gray,
-    marginBottom: 24,
+    color: "#aaa",
+    textAlign: "center",
+    marginBottom: 20
   },
-  input: {
-    backgroundColor: colors.white,
-    padding: 16,
-    borderRadius: 14,
-    marginBottom: 16,
+
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A1A1A",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "#2A2A2A"
   },
+
+  input: {
+    flex: 1,
+    color: "#fff",
+    padding: 12
+  },
+
+  button: {
+    backgroundColor: "#8B5CF6",
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 10
+  },
+
+  buttonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold"
+  },
+
+  link: {
+    color: "#8B5CF6",
+    textAlign: "center",
+    marginTop: 15
+  },
+
+  securityBox: {
+    flexDirection: "row",
+    backgroundColor: "#111",
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 20,
+    alignItems: "center"
+  },
+
+  securityTitle: {
+    color: "#fff",
+    fontWeight: "bold"
+  },
+
+  securityText: {
+    color: "#aaa",
+    fontSize: 12
+  }
 });
