@@ -222,9 +222,9 @@ exports.getRankingByMunicipality = async (req, res) => {
 // =============================
 exports.getLastReports = async (req, res) => {
   try {
-    const twelveHoursAgo = new Date();
-    twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12);
-
+    const twelveHoursAgo = new Date(); // Hora actual
+    twelveHoursAgo.setHours(twelveHoursAgo.getHours() - 12); // Restamos 12 horas
+// Buscamos reportes desde hace 12 horas, incluyendo ubicación y municipio
     const reports = await Report.findAll({
       include: [
         {
@@ -244,12 +244,12 @@ exports.getLastReports = async (req, res) => {
           ]
         }
       ],
-      where: { report_date: { [Op.gte]: twelveHoursAgo } },
+      where: { report_date: { [Op.gte]: twelveHoursAgo } }, // Solo reportes de las últimas 12 horas
       order: [["report_date", "DESC"]],
       limit: 20
     });
 
-    res.json(reports);
+    res.json(reports); // Devolvemos los reportes sin formatear, el frontend se encargará de mostrar municipio o "Sin municipio"
   } catch (error) {
     console.error("Error trayendo últimos reportes", error);
     res.status(500).json({ error: "Error al obtener reportes recientes" });
