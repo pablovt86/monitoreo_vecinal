@@ -41,6 +41,7 @@ export default function ReportDetail() {
   const fetchReport = async () => {
     try {
       const response = await api.get(`/reports/${id}`);
+      console.log("Detalle reporte", response.data);
       setReport(response.data);
     } catch (error) {
       console.log("Error detalle", error);
