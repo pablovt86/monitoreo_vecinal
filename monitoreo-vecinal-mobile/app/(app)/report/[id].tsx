@@ -91,7 +91,7 @@ export default function ReportDetail() {
   // =============================
   const handleResolve = async () => {
     try {
-      await api.put(`/reports/${id}/status`, {
+      await api.patch(`/reports/${id}/status`, {
         status: "resolved"
       });
       fetchReport();
