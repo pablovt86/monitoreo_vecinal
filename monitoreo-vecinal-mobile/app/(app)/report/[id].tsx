@@ -31,9 +31,11 @@ export default function ReportDetail() {
   const [imageVisible, setImageVisible] = useState(false);
 
   useEffect(() => {
+    if (id) {
     fetchReport();
-    fetchComments();
-  }, []);
+      fetchComments();
+    }
+  }, [id]);
 
   // =============================
   // 📄 FETCH REPORTE
