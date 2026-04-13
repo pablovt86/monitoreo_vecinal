@@ -92,9 +92,11 @@ export default function ReportDetail() {
   const handleResolve = async () => {
     try {
       await api.patch(`/reports/${id}/status`, {
-        status: "resolved"
+        status: "resuelto"
       });
       fetchReport();
+      //rediriguir a home después de resolver
+      router.push("/home");
     } catch (error) {
       console.log(error);
     }

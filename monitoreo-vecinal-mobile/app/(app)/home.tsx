@@ -326,7 +326,7 @@ export default function Home() {
           )}
         </View>
 
-        {/* RANKING */}
+      {/* RANKING */}
         {isPersonalized && (
           <TouchableOpacity
             style={{
@@ -356,11 +356,16 @@ export default function Home() {
             : "🔥 Municipios más reportados"}
         </Text>
 
+        {/* ✅ CAMBIO 1: El View ahora es TouchableOpacity */}
         {ranking.slice(0, 3).map((item, index) => (
-          <View key={index} style={styles.card}>
+          <TouchableOpacity 
+            key={item.municipio}
+            style={styles.card}
+            onPress={() => router.push(`/municipio/${item.municipio}` as any)}
+          >
             <Text style={styles.rankPosition}>
               #{index + 1}
-            </Text>
+            </Text> 
 
             <View>
               <Text style={styles.municipio}>
@@ -370,7 +375,7 @@ export default function Home() {
                 {item.total} reportes
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
 
         {/* CARRUSEL */}
@@ -391,11 +396,12 @@ export default function Home() {
               No hay alertas recientes
             </Text>
           ) : (
-            lastReports.map((report, index) => (
+            lastReports.map((report) => (
+              /* ✅ CAMBIO 2: Arreglamos el error del key en el carrusel */
               <TouchableOpacity
-                key={index}
+                key={report.id} // 🔥 Usamos el ID de la base de datos
                 style={styles.carouselCard}
-                onPress={() => router.push(`/report/${report.id}`)}
+                onPress={() => router.push(`/report/${report.id}` as const)}
               >
                 <Text style={styles.reportTitle}>
                   {report.description}
