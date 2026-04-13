@@ -121,14 +121,19 @@ export default function MunicipioAlertas() {
   ];
 
   // 📊 Bar Chart (reportes por día)
-  const reportsByDay = reportes.reduce((acc: any, r) => {
-    const date = new Date(r.report_date).toLocaleDateString();
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {});
+ const reportsByDay: Record<string, number> = reportes.reduce((acc, r) => {
+  const date = new Date(r.report_date).toLocaleDateString();
 
-  const barLabels = Object.keys(reportsByDay).slice(-5);
-  const barData = Object.values(reportsByDay).slice(-5).map(Number);
+  acc[date] = (acc[date] || 0) + 1;
+
+  return acc;
+}, {} as Record<string, number>);
+
+const barLabels = Object.keys(reportsByDay).slice(-5);
+
+const barData = Object.values(reportsByDay)
+  .slice(-5)
+  .map((v) => Number(v));
 
   // 🎨 CONFIG GRÁFICOS
   const chartConfig = {
@@ -206,19 +211,23 @@ export default function MunicipioAlertas() {
 
         {/* 📊 BAR CHART */}
         <Text style={styles.chartTitle}>Actividad reciente</Text>
+        
         <BarChart
-          data={{
-            labels: barLabels,
-            datasets: [{ data: barData }],
-          }}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={chartConfig}
-          yAxisLabel=""
-          yAxisSuffix=""
-          fromZero
-          showValuesOnTopOfBars
-        />
+            data={{
+              labels: barLabels,
+              datasets: [{ data: barData }],
+            }}
+            width={screenWidth - 32}
+            height={220}
+            chartConfig={chartConfig}
+            fromZero
+            showValuesOnTopOfBars
+            yAxisLabel=""
+            yAxisSuffix=""
+          />
+
+
+
 
         {/* LISTA */}
         {cargando ? (
