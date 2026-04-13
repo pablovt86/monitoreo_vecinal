@@ -401,7 +401,10 @@ export default function Home() {
               <TouchableOpacity
                 key={report.id} // 🔥 Usamos el ID de la base de datos
                 style={styles.carouselCard}
-                onPress={() => router.push(`/report/${report.id}` as const)}
+                onPress={() => {
+                console.log("👉 TOCASTE LA TARJETA CON ID:", report.id);
+                router.push(`/report/${report.id}` as const);
+                }}
               >
                 <Text style={styles.reportTitle}>
                   {report.description}
