@@ -18,8 +18,9 @@ import { PieChart, BarChart } from "react-native-chart-kit";
 export default function MunicipioAlertas() {
 
   // =============================
-  // 📌 PARAMS (nombre del municipio)
+  // 📌 PARAMS
   // =============================
+  // Recibimos el nombre del municipio desde la ruta dinámica
   const { nombre } = useLocalSearchParams();
 
   // ⚠️ Puede venir como string o array → lo normalizamos
@@ -32,6 +33,9 @@ export default function MunicipioAlertas() {
   // =============================
   const [reportes, setReportes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
+
+  // 🔥 Estado nuevo: filtro de tiempo (clave en producto real)
+  const [filtroTiempo, setFiltroTiempo] = useState("7d");
 
   // =============================
   // 🔄 FETCH DATA
@@ -46,10 +50,8 @@ export default function MunicipioAlertas() {
     try {
       setCargando(true);
 
-      // 🔥 Traemos reportes filtrados por municipio
       const response = await api.get(`/reports?municipio=${nombreMunicipio}`);
 
-      // Validamos que sea array
       if (Array.isArray(response.data)) {
         setReportes(response.data);
       } else {
@@ -65,13 +67,31 @@ export default function MunicipioAlertas() {
   };
 
   // =============================
-  // 📈 MÉTRICAS (OPTIMIZADAS)
+  // 🧠 FILTRO POR TIEMPO (EMPRESA)
+  // =============================
+  const reportesFiltrados = useMemo(() => {
+    const ahora = new Date();
+
+    return reportes.filter((r) => {
+      const fecha = new Date(r.report_date);
+      const diff = (ahora.getTime() - fecha.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (filtroTiempo === "24h") return diff <= 1;
+      if (filtroTiempo === "7d") return diff <= 7;
+      if (filtroTiempo === "30d") return diff <= 30;
+
+      return true;
+    });
+  }, [reportes, filtroTiempo]);
+
+  // =============================
+  // 📈 MÉTRICAS DINÁMICAS
   // =============================
   const { total, resueltos, pendientes, porcentajeResueltos } = useMemo(() => {
 
-    const total = reportes.length;
+    const total = reportesFiltrados.length;
 
-    const resueltos = reportes.filter(r => r.status === "resuelto").length;
+    const resueltos = reportesFiltrados.filter(r => r.status === "resuelto").length;
 
     const pendientes = total - resueltos;
 
@@ -81,28 +101,28 @@ export default function MunicipioAlertas() {
 
     return { total, resueltos, pendientes, porcentajeResueltos };
 
-  }, [reportes]);
+  }, [reportesFiltrados]);
 
   // =============================
   // 🗺️ MAPA CONFIG
   // =============================
   const initialRegion = useMemo(() => {
-    if (!reportes.length || !reportes[0].Location) return null;
+    if (!reportesFiltrados.length || !reportesFiltrados[0].Location) return null;
 
     return {
-      latitude: Number(reportes[0].Location.latitude),
-      longitude: Number(reportes[0].Location.longitude),
+      latitude: Number(reportesFiltrados[0].Location.latitude),
+      longitude: Number(reportesFiltrados[0].Location.longitude),
       latitudeDelta: 0.05,
       longitudeDelta: 0.05,
     };
-  }, [reportes]);
+  }, [reportesFiltrados]);
 
   // =============================
   // 📊 DATOS GRÁFICOS
   // =============================
   const screenWidth = Dimensions.get("window").width;
 
-  // 🥧 Pie Chart (estado)
+  // 🥧 Pie Chart
   const pieData = [
     {
       name: "Resueltos",
@@ -120,20 +140,18 @@ export default function MunicipioAlertas() {
     },
   ];
 
-  // 📊 Bar Chart (reportes por día)
- const reportsByDay: Record<string, number> = reportes.reduce((acc, r) => {
-  const date = new Date(r.report_date).toLocaleDateString();
+  // 📊 Agrupar reportes por día
+  const reportsByDay: Record<string, number> = reportesFiltrados.reduce((acc, r) => {
+    const date = new Date(r.report_date).toLocaleDateString();
+    acc[date] = (acc[date] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  acc[date] = (acc[date] || 0) + 1;
+  const barLabels = Object.keys(reportsByDay).slice(-5);
 
-  return acc;
-}, {} as Record<string, number>);
-
-const barLabels = Object.keys(reportsByDay).slice(-5);
-
-const barData = Object.values(reportsByDay)
-  .slice(-5)
-  .map((v) => Number(v));
+  const barData = Object.values(reportsByDay)
+    .slice(-5)
+    .map((v) => Number(v));
 
   // 🎨 CONFIG GRÁFICOS
   const chartConfig = {
@@ -160,12 +178,33 @@ const barData = Object.values(reportsByDay)
 
       <ScrollView>
 
-        <Text style={styles.subtitle}>Análisis del municipio</Text>
+        {/* 🧠 FILTROS */}
+        <View style={styles.filtrosContainer}>
+          {["24h", "7d", "30d"].map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[
+                styles.filtroBtn,
+                filtroTiempo === f && styles.filtroActivo
+              ]}
+              onPress={() => setFiltroTiempo(f)}
+            >
+              <Text style={styles.filtroText}>{f}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* 📊 MENSAJE INTELIGENTE */}
+        <Text style={styles.insight}>
+          {total > 0
+            ? `Se registraron ${total} reportes en los últimos ${filtroTiempo}`
+            : "Sin actividad en este período"}
+        </Text>
 
         {/* 🗺️ MAPA */}
         {initialRegion && (
           <MapView style={styles.map} initialRegion={initialRegion}>
-            {reportes.map((r) => (
+            {reportesFiltrados.map((r) => (
               r.Location && (
                 <Marker
                   key={r.id}
@@ -211,33 +250,29 @@ const barData = Object.values(reportsByDay)
 
         {/* 📊 BAR CHART */}
         <Text style={styles.chartTitle}>Actividad reciente</Text>
-        
         <BarChart
-            data={{
-              labels: barLabels,
-              datasets: [{ data: barData }],
-            }}
-            width={screenWidth - 32}
-            height={220}
-            chartConfig={chartConfig}
-            fromZero
-            showValuesOnTopOfBars
-            yAxisLabel=""
-            yAxisSuffix=""
-          />
-
-
-
+          data={{
+            labels: barLabels,
+            datasets: [{ data: barData }],
+          }}
+          width={screenWidth - 32}
+          height={220}
+          chartConfig={chartConfig}
+          fromZero
+          showValuesOnTopOfBars
+          yAxisLabel=""
+          yAxisSuffix=""
+        />
 
         {/* LISTA */}
         {cargando ? (
           <ActivityIndicator size="large" color="#ef4444" />
-        ) : reportes.length === 0 ? (
+        ) : reportesFiltrados.length === 0 ? (
           <Text style={styles.emptyText}>
             No hay alertas en este municipio
           </Text>
         ) : (
-          reportes.map((report) => (
+          reportesFiltrados.map((report) => (
             <TouchableOpacity
               key={report.id}
               style={styles.card}
@@ -259,7 +294,7 @@ const barData = Object.values(reportsByDay)
   );
 }
 
-// 🧱 COMPONENTE REUTILIZABLE
+// 🧱 COMPONENTE REUTILIZABLE (nivel empresa)
 function Metric({ title, value }: any) {
   return (
     <View style={styles.metricCard}>
@@ -280,21 +315,30 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  backButtonText: {
-    color: "#fff",
-    marginRight: 10
+  backButtonText: { color: "#fff", marginRight: 10 },
+
+  title: { color: "#fff", fontSize: 22, fontWeight: "bold" },
+
+  filtrosContainer: { flexDirection: "row", marginBottom: 15, gap: 10 },
+
+  filtroBtn: {
+    backgroundColor: "#1f2937",
+    padding: 8,
+    borderRadius: 8
   },
 
-  title: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "bold"
+  filtroActivo: {
+    backgroundColor: "#2563eb"
   },
 
-  subtitle: {
+  filtroText: { color: "#fff" },
+
+  insight: {
     color: "#9ca3af",
-    marginBottom: 15
+    marginBottom: 10
   },
+
+  subtitle: { color: "#9ca3af", marginBottom: 15 },
 
   map: {
     height: 200,
@@ -316,10 +360,7 @@ const styles = StyleSheet.create({
     alignItems: "center"
   },
 
-  metricTitle: {
-    color: "#9ca3af",
-    fontSize: 12
-  },
+  metricTitle: { color: "#9ca3af", fontSize: 12 },
 
   metricValue: {
     color: "#fff",
@@ -334,9 +375,7 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
 
-  analysisText: {
-    color: "#fff"
-  },
+  analysisText: { color: "#fff" },
 
   chartTitle: {
     color: "#fff",
@@ -352,14 +391,9 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
 
-  reportTitle: {
-    color: "#fff",
-    fontWeight: "bold"
-  },
+  reportTitle: { color: "#fff", fontWeight: "bold" },
 
-  reportDate: {
-    color: "#ef4444"
-  },
+  reportDate: { color: "#ef4444" },
 
   emptyText: {
     color: "#9ca3af",
