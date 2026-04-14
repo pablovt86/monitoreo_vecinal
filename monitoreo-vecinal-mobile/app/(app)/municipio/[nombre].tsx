@@ -20,10 +20,7 @@ export default function MunicipioAlertas() {
   // =============================
   // 📌 PARAMS
   // =============================
-  // Recibimos el nombre del municipio desde la ruta dinámica
   const { nombre } = useLocalSearchParams();
-
-  // ⚠️ Puede venir como string o array → lo normalizamos
   const nombreMunicipio = Array.isArray(nombre) ? nombre[0] : nombre;
 
   const router = useRouter();
@@ -33,41 +30,54 @@ export default function MunicipioAlertas() {
   // =============================
   const [reportes, setReportes] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
-
-  // 🔥 Estado nuevo: filtro de tiempo (clave en producto real)
   const [filtroTiempo, setFiltroTiempo] = useState("7d");
 
   // =============================
-  // 🔄 FETCH DATA
+  // 🔥 FETCH CON CANCELACIÓN (FIX PRO)
   // =============================
   useEffect(() => {
-    if (nombreMunicipio) {
-      cargarReportesDelMunicipio();
-    }
+    if (!nombreMunicipio) return;
+
+    // 🔥 Creamos controlador para cancelar requests viejas
+    const controller = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        setCargando(true);
+        setReportes([]); // limpiar UI
+
+        const response = await api.get(
+          `/reports?municipio=${encodeURIComponent(nombreMunicipio)}`,
+          { signal: controller.signal } // 🔥 clave
+        );
+
+        if (Array.isArray(response.data)) {
+          setReportes(response.data);
+        } else {
+          setReportes([]);
+        }
+
+      } catch (error: any) {
+        // 🔥 ignoramos errores por cancelación
+        if (error.name !== "CanceledError") {
+          console.log("Error al cargar:", error);
+        }
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    fetchData();
+
+    // 🔥 cleanup: cancela request anterior
+    return () => {
+      controller.abort();
+    };
+
   }, [nombreMunicipio]);
 
-  const cargarReportesDelMunicipio = async () => {
-    try {
-      setCargando(true);
-
-      const response = await api.get(`/reports?municipio=${nombreMunicipio}`);
-
-      if (Array.isArray(response.data)) {
-        setReportes(response.data);
-      } else {
-        setReportes([]);
-      }
-
-    } catch (error) {
-      console.log("Error al cargar:", error);
-      setReportes([]);
-    } finally {
-      setCargando(false);
-    }
-  };
-
   // =============================
-  // 🧠 FILTRO POR TIEMPO (EMPRESA)
+  // 🧠 FILTRO POR TIEMPO
   // =============================
   const reportesFiltrados = useMemo(() => {
     const ahora = new Date();
@@ -85,14 +95,11 @@ export default function MunicipioAlertas() {
   }, [reportes, filtroTiempo]);
 
   // =============================
-  // 📈 MÉTRICAS DINÁMICAS
+  // 📊 MÉTRICAS
   // =============================
   const { total, resueltos, pendientes, porcentajeResueltos } = useMemo(() => {
-
     const total = reportesFiltrados.length;
-
     const resueltos = reportesFiltrados.filter(r => r.status === "resuelto").length;
-
     const pendientes = total - resueltos;
 
     const porcentajeResueltos = total > 0
@@ -100,11 +107,10 @@ export default function MunicipioAlertas() {
       : 0;
 
     return { total, resueltos, pendientes, porcentajeResueltos };
-
   }, [reportesFiltrados]);
 
   // =============================
-  // 🗺️ MAPA CONFIG
+  // 🗺️ MAPA
   // =============================
   const initialRegion = useMemo(() => {
     if (!reportesFiltrados.length || !reportesFiltrados[0].Location) return null;
@@ -118,11 +124,10 @@ export default function MunicipioAlertas() {
   }, [reportesFiltrados]);
 
   // =============================
-  // 📊 DATOS GRÁFICOS
+  // 📊 CHARTS
   // =============================
   const screenWidth = Dimensions.get("window").width;
 
-  // 🥧 Pie Chart
   const pieData = [
     {
       name: "Resueltos",
@@ -140,7 +145,6 @@ export default function MunicipioAlertas() {
     },
   ];
 
-  // 📊 Agrupar reportes por día
   const reportsByDay: Record<string, number> = reportesFiltrados.reduce((acc, r) => {
     const date = new Date(r.report_date).toLocaleDateString();
     acc[date] = (acc[date] || 0) + 1;
@@ -148,12 +152,8 @@ export default function MunicipioAlertas() {
   }, {} as Record<string, number>);
 
   const barLabels = Object.keys(reportsByDay).slice(-5);
+  const barData = Object.values(reportsByDay).slice(-5).map(Number);
 
-  const barData = Object.values(reportsByDay)
-    .slice(-5)
-    .map((v) => Number(v));
-
-  // 🎨 CONFIG GRÁFICOS
   const chartConfig = {
     backgroundGradientFrom: "#0b1120",
     backgroundGradientTo: "#0b1120",
@@ -167,7 +167,6 @@ export default function MunicipioAlertas() {
   return (
     <View style={styles.container}>
 
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Text style={styles.backButtonText}>⬅ Volver</Text>
@@ -178,7 +177,7 @@ export default function MunicipioAlertas() {
 
       <ScrollView>
 
-        {/* 🧠 FILTROS */}
+        {/* FILTROS */}
         <View style={styles.filtrosContainer}>
           {["24h", "7d", "30d"].map((f) => (
             <TouchableOpacity
@@ -194,14 +193,12 @@ export default function MunicipioAlertas() {
           ))}
         </View>
 
-        {/* 📊 MENSAJE INTELIGENTE */}
         <Text style={styles.insight}>
           {total > 0
             ? `Se registraron ${total} reportes en los últimos ${filtroTiempo}`
             : "Sin actividad en este período"}
         </Text>
 
-        {/* 🗺️ MAPA */}
         {initialRegion && (
           <MapView style={styles.map} initialRegion={initialRegion}>
             {reportesFiltrados.map((r) => (
@@ -218,25 +215,17 @@ export default function MunicipioAlertas() {
           </MapView>
         )}
 
-        {/* 📊 MÉTRICAS */}
         <View style={styles.metricsContainer}>
           <Metric title="Reportes" value={total} />
           <Metric title="Activos" value={pendientes} />
           <Metric title="Resueltos" value={resueltos} />
         </View>
 
-        {/* 📈 ANÁLISIS */}
         <View style={styles.analysisBox}>
-          <Text style={styles.analysisText}>
-            ✔ {porcentajeResueltos}% resueltos
-          </Text>
-          <Text style={styles.analysisText}>
-            ⚠ {100 - porcentajeResueltos}% pendientes
-          </Text>
+          <Text style={styles.analysisText}>✔ {porcentajeResueltos}% resueltos</Text>
+          <Text style={styles.analysisText}>⚠ {100 - porcentajeResueltos}% pendientes</Text>
         </View>
 
-        {/* 🥧 PIE CHART */}
-        <Text style={styles.chartTitle}>Estado de Reportes</Text>
         <PieChart
           data={pieData}
           width={screenWidth - 32}
@@ -248,8 +237,6 @@ export default function MunicipioAlertas() {
           absolute
         />
 
-        {/* 📊 BAR CHART */}
-        <Text style={styles.chartTitle}>Actividad reciente</Text>
         <BarChart
           data={{
             labels: barLabels,
@@ -264,7 +251,6 @@ export default function MunicipioAlertas() {
           yAxisSuffix=""
         />
 
-        {/* LISTA */}
         {cargando ? (
           <ActivityIndicator size="large" color="#ef4444" />
         ) : reportesFiltrados.length === 0 ? (
@@ -278,10 +264,7 @@ export default function MunicipioAlertas() {
               style={styles.card}
               onPress={() => router.push(`/report/${report.id}`)}
             >
-              <Text style={styles.reportTitle}>
-                {report.description}
-              </Text>
-
+              <Text style={styles.reportTitle}>{report.description}</Text>
               <Text style={styles.reportDate}>
                 Estado: {report.status}
               </Text>
@@ -294,7 +277,7 @@ export default function MunicipioAlertas() {
   );
 }
 
-// 🧱 COMPONENTE REUTILIZABLE (nivel empresa)
+// 🔥 COMPONENTE REUTILIZABLE
 function Metric({ title, value }: any) {
   return (
     <View style={styles.metricCard}>
@@ -304,100 +287,26 @@ function Metric({ title, value }: any) {
   );
 }
 
-// 🎨 ESTILOS
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0b1120", padding: 16 },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 20,
-  },
-
+  header: { flexDirection: "row", alignItems: "center", marginTop: 40, marginBottom: 20 },
   backButtonText: { color: "#fff", marginRight: 10 },
-
   title: { color: "#fff", fontSize: 22, fontWeight: "bold" },
-
   filtrosContainer: { flexDirection: "row", marginBottom: 15, gap: 10 },
-
-  filtroBtn: {
-    backgroundColor: "#1f2937",
-    padding: 8,
-    borderRadius: 8
-  },
-
-  filtroActivo: {
-    backgroundColor: "#2563eb"
-  },
-
+  filtroBtn: { backgroundColor: "#1f2937", padding: 8, borderRadius: 8 },
+  filtroActivo: { backgroundColor: "#2563eb" },
   filtroText: { color: "#fff" },
-
-  insight: {
-    color: "#9ca3af",
-    marginBottom: 10
-  },
-
-  subtitle: { color: "#9ca3af", marginBottom: 15 },
-
-  map: {
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 15
-  },
-
-  metricsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 15
-  },
-
-  metricCard: {
-    backgroundColor: "#1f2937",
-    padding: 12,
-    borderRadius: 10,
-    width: "30%",
-    alignItems: "center"
-  },
-
+  insight: { color: "#9ca3af", marginBottom: 10 },
+  map: { height: 200, borderRadius: 12, marginBottom: 15 },
+  metricsContainer: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+  metricCard: { backgroundColor: "#1f2937", padding: 12, borderRadius: 10, width: "30%", alignItems: "center" },
   metricTitle: { color: "#9ca3af", fontSize: 12 },
-
-  metricValue: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold"
-  },
-
-  analysisBox: {
-    backgroundColor: "#111827",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20
-  },
-
+  metricValue: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  analysisBox: { backgroundColor: "#111827", padding: 12, borderRadius: 10, marginBottom: 20 },
   analysisText: { color: "#fff" },
-
-  chartTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10
-  },
-
-  card: {
-    backgroundColor: "#1f2937",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12
-  },
-
+  chartTitle: { color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 10 },
+  card: { backgroundColor: "#1f2937", padding: 16, borderRadius: 12, marginBottom: 12 },
   reportTitle: { color: "#fff", fontWeight: "bold" },
-
   reportDate: { color: "#ef4444" },
-
-  emptyText: {
-    color: "#9ca3af",
-    textAlign: "center",
-    marginTop: 20
-  }
+  emptyText: { color: "#9ca3af", textAlign: "center", marginTop: 20 }
 });

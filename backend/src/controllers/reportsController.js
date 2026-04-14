@@ -15,8 +15,7 @@ const {
 } = require("../models");
 
 // Importamos operadores de Sequelize (para filtros de fechas)
-const { Op } = require("sequelize");
-
+const { Op, fn, col, where } = require("sequelize");
 // =============================
 // CREAR REPORTE
 // =============================
@@ -83,8 +82,16 @@ exports.createReport = async (req, res) => {
 // =============================
 // TRAER TODOS LOS REPORTES
 // =============================
+
+
+// =============================
+// TRAER REPORTES (CON FILTRO)
+// =============================
 exports.getReports = async (req, res) => {
   try {
+
+    const { municipio } = req.query;
+
     const reports = await Report.findAll({
       include: [
         { model: User },
@@ -95,7 +102,16 @@ exports.getReports = async (req, res) => {
             {
               model: Neighborhood,
               include: [
-                { model: Municipality }
+                {
+                  model: Municipality,
+                  // 🔥 SOLO FILTRAR SI VIENE QUERY
+                  ...(municipio && {
+                    where: where(
+                      fn("LOWER", col("Location.Neighborhood.Municipality.name")),
+                      municipio.toLowerCase()
+                    )
+                  })
+                }
               ]
             }
           ]
@@ -113,12 +129,12 @@ exports.getReports = async (req, res) => {
     }));
 
     res.json(reportsFormatted);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al obtener reportes" });
   }
 };
-
 // =============================
 // TRAER UN REPORTE POR ID
 // =============================
