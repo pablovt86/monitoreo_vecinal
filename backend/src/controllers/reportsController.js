@@ -89,10 +89,19 @@ exports.createReport = async (req, res) => {
 // =============================
 exports.getReports = async (req, res) => {
   try {
-
     const { municipio } = req.query;
 
+   const whereCondition = municipio
+  ? {
+      "$Location.Neighborhood.Municipality.name$": {
+        [Op.iLike]: municipio
+      }
+    }
+  : {};
+
     const reports = await Report.findAll({
+      where: whereCondition,
+
       include: [
         { model: User },
         { model: IncidentType },
@@ -102,21 +111,13 @@ exports.getReports = async (req, res) => {
             {
               model: Neighborhood,
               include: [
-                {
-                  model: Municipality,
-                  // 🔥 SOLO FILTRAR SI VIENE QUERY
-                  ...(municipio && {
-                    where: where(
-                      fn("LOWER", col("Location.Neighborhood.Municipality.name")),
-                      municipio.toLowerCase()
-                    )
-                  })
-                }
+                { model: Municipality }
               ]
             }
           ]
         }
       ],
+
       order: [["report_date", "DESC"]]
     });
 
@@ -131,7 +132,7 @@ exports.getReports = async (req, res) => {
     res.json(reportsFormatted);
 
   } catch (error) {
-    console.error(error);
+    console.error("ERROR GET REPORTS:", error);
     res.status(500).json({ error: "Error al obtener reportes" });
   }
 };

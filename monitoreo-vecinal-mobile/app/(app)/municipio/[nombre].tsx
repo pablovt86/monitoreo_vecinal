@@ -46,10 +46,9 @@ export default function MunicipioAlertas() {
         setCargando(true);
         setReportes([]); // limpiar UI
 
-        const response = await api.get(
-          `/reports?municipio=${encodeURIComponent(nombreMunicipio)}`,
-          { signal: controller.signal } // 🔥 clave
-        );
+     const response = await api.get(
+  `/reports?municipio=${encodeURIComponent(nombreMunicipio)}`
+);
 
         if (Array.isArray(response.data)) {
           setReportes(response.data);
