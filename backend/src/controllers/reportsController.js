@@ -13,7 +13,7 @@ const {
   Municipality,
   ReportValidation
 } = require("../models");
-
+const supabase = require("../config/supabase");
 // Importamos operadores de Sequelize (para filtros de fechas)
 const { Op, fn, col, where } = require("sequelize");
 // =============================
@@ -59,7 +59,37 @@ exports.createReport = async (req, res) => {
 }
 
     // Imagen
-    const image = req.file ? req.file.filename : null;
+   let image = null;
+console.log("FILE:", req.file);
+if (req.file) {
+
+  const fileExt = req.file.originalname.split(".").pop();
+
+  const fileName = `${Date.now()}-${Math.random()
+    .toString(36)
+    .substring(2)}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from("reports")
+    .upload(fileName, req.file.buffer, {
+      contentType: req.file.mimetype,
+      upsert: false
+    });
+
+  if (error) {
+    console.error("SUPABASE STORAGE ERROR:", error);
+
+    return res.status(500).json({
+      error: "Error subiendo imagen"
+    });
+  }
+
+  const { data } = supabase.storage
+    .from("reports")
+    .getPublicUrl(fileName);
+
+  image = data.publicUrl;
+}
 
     // Crear reporte
     const report = await Report.create({
@@ -125,7 +155,7 @@ exports.getReports = async (req, res) => {
 
     const reportsFormatted = reports.map(report => ({
       ...report.toJSON(),
-      image: report.image ? `${baseUrl}/uploads/${report.image}` : null,
+      image: report.image,
       municipio: report.Location?.Neighborhood?.Municipality?.name || "Sin municipio"
     }));
 
