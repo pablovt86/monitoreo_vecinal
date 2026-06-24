@@ -75,7 +75,7 @@ export default function Denuncia() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
-      quality: 1,
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -99,7 +99,7 @@ export default function Denuncia() {
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ["images"],
     allowsEditing: true,
-    quality: 1,
+    quality: 0.5,
   });
 
   if (!result.canceled) {
