@@ -21,6 +21,8 @@ const { Op, fn, col, where } = require("sequelize");
 // =============================
 exports.createReport = async (req, res) => {
   try {
+    console.log("REQ FILE:", req.file);
+    console.log("REQ BODY:", req.body);
     const user_id = req.user?.id;
 
     if (!user_id) {
