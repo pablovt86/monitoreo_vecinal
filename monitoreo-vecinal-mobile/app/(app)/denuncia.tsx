@@ -83,6 +83,30 @@ export default function Denuncia() {
     }
   };
 
+  const takePhoto = async () => {
+
+  const permission =
+    await ImagePicker.requestCameraPermissionsAsync();
+
+  if (!permission.granted) {
+    Alert.alert(
+      "Permiso requerido",
+      "Debes permitir el acceso a la cámara"
+    );
+    return;
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ["images"],
+    allowsEditing: true,
+    quality: 1,
+  });
+
+  if (!result.canceled) {
+    setImage(result.assets[0]);
+  }
+};
+
   // =============================
   // 🚀 SUBMIT
   // =============================
@@ -231,9 +255,33 @@ const getAddressFromCoords = async (lat: number, lng: number) => {
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.imageButton} onPress={pickImage}>
-        <Text style={styles.imageButtonText}>📷 Subir imagen</Text>
-      </TouchableOpacity>
+   <TouchableOpacity
+  style={styles.imageButton}
+  onPress={() =>
+    Alert.alert(
+      "Agregar evidencia",
+      "Seleccioná una opción",
+      [
+        {
+          text: "📸 Tomar foto",
+          onPress: takePhoto
+        },
+        {
+          text: "🖼️ Galería",
+          onPress: pickImage
+        },
+        {
+          text: "Cancelar",
+          style: "cancel"
+        }
+      ]
+    )
+  }
+>
+  <Text style={styles.imageButtonText}>
+    📷 Agregar evidencia
+  </Text>
+</TouchableOpacity>
 
       {image && (
         <Image source={{ uri: image.uri }} style={styles.preview} />

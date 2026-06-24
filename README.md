@@ -1,4 +1,4 @@
-# 🛡️ Monitoreo Vecinal - Plataforma de Seguridad Ciudadana
+ # 🛡️ Monitoreo Vecinal - Plataforma de Seguridad Ciudadana
 
 ## 📌 Descripción del Proyecto
 
