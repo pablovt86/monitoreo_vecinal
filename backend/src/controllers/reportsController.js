@@ -13,7 +13,7 @@ const {
   Municipality,
   ReportValidation
 } = require("../models");
-const supabase = require("../config/supabase");
+const supabase = require("../../config/supabase");
 // Importamos operadores de Sequelize (para filtros de fechas)
 const { Op, fn, col, where } = require("sequelize");
 // =============================
